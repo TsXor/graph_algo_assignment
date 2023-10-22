@@ -10,10 +10,11 @@ int main(void) {
     for (size_t i = 0; i < n; i++) {
         std::cin >> a >> b;
         net.insert_conn(a, b, nullptr);
+        net.insert_conn(b, a, nullptr);
     }
     
     std::cout << "*";
-    dfs_iter(net, 1,
+    search::dfs_iter(net, 1,
         [](size_t n, std::vector<size_t> history) -> bool {
             std::cout << " -> " << n;
             return false;
@@ -22,7 +23,7 @@ int main(void) {
     std::cout << std::endl;
     
     std::cout << "*";
-    bfs_iter(net, 1,
+    search::bfs_iter(net, 1,
         [](size_t n, size_t depth) -> bool {
             std::cout << " -> " << n;
             return false;

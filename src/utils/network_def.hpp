@@ -2,51 +2,38 @@
 #define __GAU_NETWORK_DEF_HPP__
 
 #include <cstdint>
+#include <list>
 #include <unordered_map>
 #include <functional>
 #include <memory>
 
 
 struct network {
-    struct connection {
-        size_t connected_a;
-        size_t connected_b;
-        void* info;
-    };
-    using node_conn_map = std::unordered_multimap<size_t, std::shared_ptr<connection>>;
-    static inline size_t get_point_to(node_conn_map::value_type& p) {
-        return p.first == p.second->connected_a ? p.second->connected_b : p.second->connected_a;
-    }
-
+    // maybe let dest_set = std::unordered_map<size_t, void*>
+    using dest_set = std::list<std::pair<size_t, void*>>;
+    using node_conn_map = std::unordered_map<size_t, dest_set>;
     node_conn_map connmap;
+    
+    void insert_conn(size_t from, size_t to, void* info) {
+        auto& conn_list_ref = connmap[from];
+        conn_list_ref.emplace_back(to, info);
+        connmap[to]; // make sure it exist
+    }
+    
+    void erase_conn(size_t from, size_t to) {
+        auto conn_list_it = connmap.find(from);
+        if (conn_list_it != connmap.end()) {
+            conn_list_it->second.remove_if(
+                [to](dest_set::value_type v) {return v.first == to;}
+            );
+        }
+    }
+    
+    dest_set& insert_node(size_t n) {
+        return connmap[n];
+    }
 
-    std::weak_ptr<connection> insert_conn(size_t a, size_t b, void* info) {
-        auto conn_ptr = std::make_shared<connection>();
-        conn_ptr->connected_a = a;
-        conn_ptr->connected_b = b;
-        conn_ptr->info = info;
-        connmap.emplace(a, conn_ptr);
-        connmap.emplace(b, conn_ptr);
-        return conn_ptr;
-    }
-    
-    void erase_conn(size_t a, size_t b) {
-        for (auto a_iter = connmap.find(a); a_iter != connmap.end(); ++a_iter) {
-            if (get_point_to(*a_iter) == b) {
-                connmap.erase(a_iter); break;
-            }
-        }
-        for (auto b_iter = connmap.find(b); b_iter != connmap.end(); ++b_iter) {
-            if (get_point_to(*b_iter) == a) {
-                connmap.erase(b_iter); break;
-            }
-        }
-    }
-    void erase_conn(const connection& conn) {
-        this->erase_conn(conn.connected_a, conn.connected_b);
-    }
-    
-    void del_node(size_t n) {
+    void erase_node(size_t n) {
         connmap.erase(n);
     }
 };
