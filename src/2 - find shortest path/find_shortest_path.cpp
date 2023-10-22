@@ -1,6 +1,6 @@
 #include <clocale>
 #include <iostream>
-#include "utils/shortest_path.hpp"
+#include "../utils/shortest_path.hpp"
 
 
 void print_path_result(size_t entrance, std::unordered_map<size_t, shortest_path::path>& paths) {

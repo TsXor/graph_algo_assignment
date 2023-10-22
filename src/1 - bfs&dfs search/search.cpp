@@ -1,5 +1,5 @@
 #include <iostream>
-#include "utils/search.hpp"
+#include "../utils/search.hpp"
 
 
 int main(void) {
