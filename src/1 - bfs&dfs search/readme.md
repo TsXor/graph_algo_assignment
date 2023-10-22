@@ -1,5 +1,7 @@
 - `walk_labyrinth.cpp` bfs/dfs走迷宫实现  
   - 输入：第一行为迷宫列数和行数，第二行为入口坐标，第三行为出口坐标，后续为迷宫内容，字符0为通，1为墙  
-- `search.cpp` 对一般图bfs/dfs搜索
-  - 输入：第一行为无向路数量，后续每行代表一条无向路
-  - 注：utils/search.hpp适用于有向路
+  - 输入例：`labyrinth_input.txt`
+- `search.cpp` 对一般图bfs/dfs搜索  
+  - 输入：第一行为无向路数量，后续每行代表一条无向路  
+  - 输入例：`search_input.txt`
+  - 注：utils/search.hpp适用于有向路  
