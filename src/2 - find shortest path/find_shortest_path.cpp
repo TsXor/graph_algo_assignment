@@ -14,20 +14,7 @@ void print_path_result(size_t entrance, std::unordered_map<size_t, shortest_path
     }
 }
 
-int main(void) {
-    setlocale(LC_ALL, ""); // 确保Windows下正常输出中文
-    
-    size_t n, entrance;
-    std::cin >> n >> entrance;
-    network net;
-    bool use_dijkstra = true;
-    for (size_t i = 0; i < n; i++) {
-        size_t src, dst; ssize_t power;
-        std::cin >> src >> dst >> power;
-        if (power < 0) use_dijkstra = false;
-        net.insert_conn(src, dst, reinterpret_cast<void*>(power));
-    }
-
+void run_algo(network& net, size_t entrance, bool use_dijkstra) {
     {
         std::cout << "bellman-ford: " << '\n';
         auto paths = shortest_path::bellman_ford(net, entrance).first;
