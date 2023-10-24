@@ -31,9 +31,15 @@ network prim(network& net, network::node_conn_map::iterator entrace_it) {
                      < reinterpret_cast<ssize_t>(b.second.second);
             }
         );
+        // 无向的，双向插入
         mst.insert_conn(
             min_candidate_it->second.first,
             min_candidate_it->first,
+            min_candidate_it->second.second
+        );
+        mst.insert_conn(
+            min_candidate_it->first,
+            min_candidate_it->second.first,
             min_candidate_it->second.second
         );
         candidates.erase(min_candidate_it);
@@ -90,11 +96,25 @@ std::pair<network, bool> kruskal(network& net) {
         uf.add_node(start);
         for (const auto& [end, info] : end_set) {
             auto& cur_conn = conns.emplace_back();
-            cur_conn.from = start;
-            cur_conn.to   = end;
+            cur_conn.from = std::min(start, end);
+            cur_conn.to   = std::max(start, end);
             cur_conn.info = info;
         }
     }
+    // 路径去重
+    std::sort(conns.begin(), conns.end(),
+        [](const full_connection& a, const full_connection& b) -> bool {
+            return a.from == b.from ? a.to < b.to : a.from < b.from;
+        }
+    );
+    conns.erase(
+        std::unique(conns.begin(), conns.end(),
+            [](const full_connection& a, const full_connection& b) -> bool {
+                return a.from == b.from && a.to == b.to;
+            }
+        ),
+        conns.end()
+    );
     std::sort(conns.begin(), conns.end(),
         [](const full_connection& a, const full_connection& b) -> bool {
             return reinterpret_cast<ssize_t>(a.info)
@@ -105,7 +125,9 @@ std::pair<network, bool> kruskal(network& net) {
     size_t inserted_conns = 0, expected_conns = net.connmap.size() - 1;
     for (const auto& [start, end, info] : conns) {
         if (!uf.merge(start, end)) continue;
+        // 无向的，双向插入
         mst.insert_conn(start, end, info);
+        mst.insert_conn(end, start, info);
         inserted_conns++;
         if (inserted_conns == expected_conns) {result.second = true; return result;}
     }
