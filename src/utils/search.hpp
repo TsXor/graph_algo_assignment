@@ -9,26 +9,25 @@
 namespace search {
 
 // 若observer返回true，立刻结束遍历
-// using Ob = bool (size_t, std::vector<size_t>);
-template <typename Ob>
+using Ob = bool (size_t, std::vector<size_t>);
+// template <typename Ob>
 void dfs_iter(network& net, size_t entrance, Ob observer) {
-    using dest_set_it_pair = std::pair<network::dest_set::iterator, network::dest_set::iterator>;
-    std::vector<dest_set_it_pair> iter_stack{std::pair(net.connmap[entrance].begin(), net.connmap[entrance].end())};
+    std::vector<network::conn_it> iter_stack;
+    iter_stack.emplace_back(net.connmap.find(entrance));
     std::vector<size_t> history{entrance};
     std::unordered_set<size_t> visited{entrance};
     if (observer(entrance, history)) return;
     while (!iter_stack.empty()) {
-        auto& last_iter_ref = iter_stack.back();
-        if (last_iter_ref.first == last_iter_ref.second) {
+        auto& last_iter = iter_stack.back();
+        if (!last_iter.more()) {
             iter_stack.pop_back();
             history.pop_back();
         } else {
-            size_t n = last_iter_ref.first->first;
-            ++last_iter_ref.first;
+            size_t n = last_iter.dest(); last_iter.to_next();
             if (visited.insert(n).second) {
                 // observe when not visited
                 if (observer(n, history)) return;
-                iter_stack.push_back(std::pair(net.connmap[n].begin(), net.connmap[n].end()));
+                iter_stack.emplace_back(net.connmap.find(n));
                 history.push_back(n);
             }
         }

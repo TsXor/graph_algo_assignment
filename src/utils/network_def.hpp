@@ -12,6 +12,21 @@ struct network {
     // maybe let dest_set = std::unordered_map<size_t, void*>
     using dest_set = std::list<std::pair<size_t, void*>>;
     using node_conn_map = std::unordered_map<size_t, dest_set>;
+    struct conn_it {
+        network::node_conn_map::iterator connmap_it;
+        network::dest_set::iterator destset_it;
+        conn_it() = default;
+        conn_it(network::node_conn_map::iterator it) {
+            this->connmap_it = it;
+            this->destset_it = it->second.begin();
+        }
+        size_t start() { return this->connmap_it->first; }
+        size_t dest()  { return this->destset_it->first; }
+        dest_set& dests() { return this->connmap_it->second; }
+        void* info()   { return this->destset_it->second; }
+        void to_next() { ++this->destset_it; }
+        bool more()    { return this->destset_it != this->connmap_it->second.end(); }
+    };
     node_conn_map connmap;
     
     void insert_conn(size_t from, size_t to, void* info) {
@@ -28,13 +43,18 @@ struct network {
             );
         }
     }
-    
-    std::pair<dest_set*, dest_set::iterator> find_conn(size_t from, size_t to) {
+
+    conn_it find_conn(size_t from, size_t to) {
         auto conn_list_it = connmap.find(from);
         if (conn_list_it == connmap.end()) throw std::out_of_range("");
         auto& conn_list = conn_list_it->second;
         for (auto conn_dest_it = conn_list.begin(); conn_dest_it != conn_list.end(); ++conn_dest_it) {
-            if (conn_dest_it->first == to) return std::pair(&conn_list, conn_dest_it);
+            if (conn_dest_it->first == to) {
+                conn_it ret;
+                ret.connmap_it = conn_list_it;
+                ret.destset_it = conn_dest_it;
+                return ret;
+            }
         }
         throw std::out_of_range("");
     }
