@@ -29,6 +29,16 @@ struct network {
         }
     }
     
+    std::pair<dest_set*, dest_set::iterator> find_conn(size_t from, size_t to) {
+        auto conn_list_it = connmap.find(from);
+        if (conn_list_it == connmap.end()) throw std::out_of_range("");
+        auto& conn_list = conn_list_it->second;
+        for (auto conn_dest_it = conn_list.begin(); conn_dest_it != conn_list.end(); ++conn_dest_it) {
+            if (conn_dest_it->first == to) return std::pair(&conn_list, conn_dest_it);
+        }
+        throw std::out_of_range("");
+    }
+    
     dest_set& insert_node(size_t n) {
         return connmap[n];
     }
