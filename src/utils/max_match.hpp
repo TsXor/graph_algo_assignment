@@ -4,7 +4,6 @@
 #include <vector>
 #include <unordered_set>
 #include "network_def.hpp"
-#include "search.hpp"
 
 
 namespace max_match {
@@ -44,32 +43,40 @@ auto split_bigraph(network net) -> std::pair<node_set, node_set> {
 
 using __extendable_path_info = std::vector<network::conn_it>;
 
-// 注：对于正确输入的无向图，并不会抛出std::out_of_range
 auto __find_extendable_path(
     network& unmarked, network& marked, size_t entrance
 ) -> __extendable_path_info { // dfs
     __extendable_path_info result;
+    if (marked.connmap.contains(entrance)) return result;
     {
         auto entrance_it = unmarked.connmap.find(entrance);
         if (entrance_it != unmarked.connmap.end())
             result.emplace_back(entrance_it);
     }
-    std::unordered_set<size_t> visited{entrance};
+    std::unordered_set<size_t> path_as_set{entrance};
     while (!result.empty()) {
         auto& last_iter = result.back();
         if (!last_iter.more()) {
+            path_as_set.erase(last_iter.start());
             result.pop_back();
-            // 路径长度为奇数，找到增广路，结束查找
-            if (result.size() % 2) break;
+            // 回退时不能触发结束
+            // if (result.size() % 2) break;
+            if (!result.empty()) result.back().to_next();
         } else {
-            size_t last_end = last_iter.dest(); last_iter.to_next();
-            if (visited.insert(last_end).second) {
+            size_t last_end = last_iter.dest();
+            if (!path_as_set.count(last_end)) {
                 // 如果当前路径长度为奇数，从已标记图中查找，否则从未标记中查找
                 network& find_from = result.size() % 2 ? marked : unmarked;
                 auto connmap_it = find_from.connmap.find(last_end);
-                if (connmap_it != find_from.connmap.end())
+                if (connmap_it != find_from.connmap.end() && !connmap_it->second.empty()) {
                     result.emplace_back(connmap_it);
-            }
+                    path_as_set.insert(last_end);
+                } else {
+                    // 路径长度为奇数，找到增广路，结束查找
+                    if (result.size() % 2) break;
+                    last_iter.to_next();
+                }
+            } else last_iter.to_next();
         }
     }
     return result; // 注：结果是单向的
@@ -84,7 +91,7 @@ void __flip_extendable_path(
         size_t conn_start = cur_info.start();
         size_t conn_dest  = cur_info.dest();
         network& net_from = i % 2 ? marked : unmarked;
-        auto bwd_info = net_from.find_conn(conn_start, conn_dest);
+        auto bwd_info = net_from.find_conn(conn_dest, conn_start);
 
         auto fwd_dest = cur_info.destset_it;
         if (i != 0) {
@@ -122,6 +129,24 @@ network kuhn_munkres(network& net, InputIt one_part_begin, InputIt one_part_end)
 network kuhn_munkres(network& net) {
     auto bisplit = split_bigraph(net);
     return kuhn_munkres(net, bisplit.first.begin(), bisplit.first.end()); 
+}
+
+network blossom(network& net) {
+    network input = net;
+    network result;
+    while (true) {
+        bool have_extendable_path = false;
+        for (auto& [vertice, _] : net.connmap) {
+            auto ext = __find_extendable_path(input, result, vertice);
+            if (!ext.empty()) {
+                have_extendable_path = true;
+                __flip_extendable_path(input, result, ext);
+                break;
+            }
+        }
+        if (!have_extendable_path) break;
+    }
+    return result;
 }
 
 } // namespace max_match

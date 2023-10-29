@@ -24,7 +24,8 @@ struct network {
         size_t dest()  { return this->destset_it->first; }
         dest_set& dests() { return this->connmap_it->second; }
         void* info()   { return this->destset_it->second; }
-        void to_next() { ++this->destset_it; }
+        conn_it& to_next() { ++this->destset_it; return *this; }
+        conn_it& to_last() { --this->destset_it; return *this; }
         bool more()    { return this->destset_it != this->connmap_it->second.end(); }
     };
     node_conn_map connmap;
@@ -33,6 +34,11 @@ struct network {
         auto& conn_list_ref = connmap[from];
         conn_list_ref.emplace_back(to, info);
         connmap[to]; // make sure it exist
+    }
+
+    void insert_conn_bidi(size_t a, size_t b, void* info) {
+        insert_conn(a, b, info);
+        insert_conn(b, a, info);
     }
     
     void erase_conn(size_t from, size_t to) {
